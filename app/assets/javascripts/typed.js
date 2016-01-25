@@ -60,6 +60,9 @@
         // amount of time to wait before backspacing
         this.backDelay = this.options.backDelay;
 
+        // div containing strings
+        this.stringsElement = this.options.stringsElement;
+
         // input strings of text
         this.strings = this.options.strings;
 
@@ -85,6 +88,11 @@
         // custom cursor
         this.cursorChar = this.options.cursorChar;
 
+        // shuffle the strings
+        this.shuffle = this.options.shuffle;
+        // the order of strings
+        this.sequence = [];
+
         // All systems go!
         this.build();
     };
@@ -95,21 +103,35 @@
 
         ,
         init: function() {
-            // begin the loop w/ first current string (global self.string)
+            // begin the loop w/ first current string (global self.strings)
             // current string will be passed as an argument each time after this
             var self = this;
             self.timeout = setTimeout(function() {
+                for (var i=0;i<self.strings.length;++i) self.sequence[i]=i;
+
+                // shuffle the array if true
+                if(self.shuffle) self.sequence = self.shuffleArray(self.sequence);
+
                 // Start typing
-                self.typewrite(self.strings[self.arrayPos], self.strPos);
+                self.typewrite(self.strings[self.sequence[self.arrayPos]], self.strPos);
             }, self.startDelay);
         }
 
         ,
         build: function() {
+            var self = this;
             // Insert cursor
             if (this.showCursor === true) {
                 this.cursor = $("<span class=\"typed-cursor\">" + this.cursorChar + "</span>");
                 this.el.after(this.cursor);
+            }
+            if (this.stringsElement) {
+                self.strings = [];
+                this.stringsElement.hide();
+                var strings = this.stringsElement.find('p');
+                $.each(strings, function(key, value){
+                    self.strings.push($(value).html());
+                });
             }
             this.init();
         }
@@ -156,14 +178,21 @@
 
                 if (self.contentType === 'html') {
                     // skip over html tags while typing
-                    if (curString.substr(curStrPos).charAt(0) === '<') {
+                    var curChar = curString.substr(curStrPos).charAt(0)
+                    if (curChar === '<' || curChar === '&') {
                         var tag = '';
-                        while (curString.substr(curStrPos).charAt(0) !== '>') {
+                        var endTag = '';
+                        if (curChar === '<') {
+                            endTag = '>'
+                        } else {
+                            endTag = ';'
+                        }
+                        while (curString.substr(curStrPos).charAt(0) !== endTag) {
                             tag += curString.substr(curStrPos).charAt(0);
                             curStrPos++;
                         }
                         curStrPos++;
-                        tag += '>';
+                        tag += endTag;
                     }
                 }
 
@@ -196,11 +225,13 @@
 
                         // start typing each new char into existing string
                         // curString: arg, self.el.html: original text inside element
-                        var nextString = self.elContent + curString.substr(0, curStrPos + 1);
+                        var nextString = curString.substr(0, curStrPos + 1);
                         if (self.attr) {
                             self.el.attr(self.attr, nextString);
                         } else {
-                            if (self.contentType === 'html') {
+                            if (self.isInput) {
+                                self.el.val(nextString);
+                            } else if (self.contentType === 'html') {
                                 self.el.html(nextString);
                             } else {
                                 self.el.text(nextString);
@@ -262,11 +293,13 @@
 
                 // ----- continue important stuff ----- //
                 // replace text with base text + typed characters
-                var nextString = self.elContent + curString.substr(0, curStrPos);
+                var nextString = curString.substr(0, curStrPos);
                 if (self.attr) {
                     self.el.attr(self.attr, nextString);
                 } else {
-                    if (self.contentType === 'html') {
+                    if (self.isInput) {
+                        self.el.val(nextString);
+                    } else if (self.contentType === 'html') {
                         self.el.html(nextString);
                     } else {
                         self.el.text(nextString);
@@ -288,14 +321,33 @@
 
                     if (self.arrayPos === self.strings.length) {
                         self.arrayPos = 0;
+
+                        // Shuffle sequence again
+                        if(self.shuffle) self.sequence = self.shuffleArray(self.sequence);
+
                         self.init();
                     } else
-                        self.typewrite(self.strings[self.arrayPos], curStrPos);
+                        self.typewrite(self.strings[self.sequence[self.arrayPos]], curStrPos);
                 }
 
                 // humanized value for typing
             }, humanize);
 
+        }
+        /**
+         * Shuffles the numbers in the given array.
+         * @param {Array} array
+         * @returns {Array}
+         */
+        ,shuffleArray: function(array) {
+            var tmp, current, top = array.length;
+            if(top) while(--top) {
+                current = Math.floor(Math.random() * (top + 1));
+                tmp = array[current];
+                array[current] = array[top];
+                array[top] = tmp;
+            }
+            return array;
         }
 
         // Start & Stop currently not working
@@ -324,7 +376,9 @@
             var id = this.el.attr('id');
             this.el.after('<span id="' + id + '"/>')
             this.el.remove();
-            this.cursor.remove();
+            if (typeof this.cursor !== 'undefined') {
+                this.cursor.remove();
+            }
             // Send the callback
             self.options.resetCallback();
         }
@@ -343,12 +397,15 @@
 
     $.fn.typed.defaults = {
         strings: ["These are the default values...", "You know what you should do?", "Use your own!", "Have a great day!"],
+        stringsElement: null,
         // typing speed
         typeSpeed: 0,
         // time before typing starts
         startDelay: 0,
         // backspacing speed
         backSpeed: 0,
+        // shuffle the strings
+        shuffle: false,
         // time before backspacing
         backDelay: 500,
         // loop
