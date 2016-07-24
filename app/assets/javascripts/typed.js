@@ -43,7 +43,7 @@
         this.showCursor = this.isInput ? false : this.options.showCursor;
 
         // text content of element
-        this.elContent = this.attr ? this.el.attr(this.attr) : this.el.text()
+        this.elContent = this.attr ? this.el.attr(this.attr) : this.el.text();
 
         // html or plain text
         this.contentType = this.options.contentType;
@@ -99,9 +99,8 @@
 
     Typed.prototype = {
 
-        constructor: Typed
+        constructor: Typed,
 
-        ,
         init: function() {
             // begin the loop w/ first current string (global self.strings)
             // current string will be passed as an argument each time after this
@@ -115,9 +114,8 @@
                 // Start typing
                 self.typewrite(self.strings[self.sequence[self.arrayPos]], self.strPos);
             }, self.startDelay);
-        }
+        },
 
-        ,
         build: function() {
             var self = this;
             // Insert cursor
@@ -126,18 +124,18 @@
                 this.el.after(this.cursor);
             }
             if (this.stringsElement) {
-                self.strings = [];
+                this.strings = [];
                 this.stringsElement.hide();
-                var strings = this.stringsElement.find('p');
+                console.log(this.stringsElement.children());
+                var strings = this.stringsElement.children();
                 $.each(strings, function(key, value){
                     self.strings.push($(value).html());
                 });
             }
             this.init();
-        }
+        },
 
         // pass current string state to each function, types 1 char per call
-        ,
         typewrite: function(curString, curStrPos) {
             // exit when stopped
             if (this.stop === true) {
@@ -184,12 +182,14 @@
                         var endTag = '';
                         if (curChar === '<') {
                             endTag = '>'
-                        } else {
+                        }
+                        else {
                             endTag = ';'
                         }
-                        while (curString.substr(curStrPos).charAt(0) !== endTag) {
+                        while (curString.substr(curStrPos + 1).charAt(0) !== endTag) {
                             tag += curString.substr(curStrPos).charAt(0);
                             curStrPos++;
+                            if (curStrPos + 1 > curString.length) { break; }
                         }
                         curStrPos++;
                         tag += endTag;
@@ -217,11 +217,13 @@
                         self.timeout = setTimeout(function() {
                             self.backspace(curString, curStrPos);
                         }, self.backDelay);
+
                     } else {
 
                         /* call before functions if applicable */
-                        if (curStrPos === 0)
+                        if (curStrPos === 0) {
                             self.options.preStringTyped(self.arrayPos);
+                        }
 
                         // start typing each new char into existing string
                         // curString: arg, self.el.html: original text inside element
@@ -249,9 +251,8 @@
                 // humanized value for typing
             }, humanize);
 
-        }
+        },
 
-        ,
         backspace: function(curString, curStrPos) {
             // exit when stopped
             if (this.stop === true) {
@@ -282,9 +283,10 @@
                     // skip over html tags while backspacing
                     if (curString.substr(curStrPos).charAt(0) === '>') {
                         var tag = '';
-                        while (curString.substr(curStrPos).charAt(0) !== '<') {
+                        while (curString.substr(curStrPos - 1).charAt(0) !== '<') {
                             tag -= curString.substr(curStrPos).charAt(0);
                             curStrPos--;
+                            if (curStrPos < 0) { break; }
                         }
                         curStrPos--;
                         tag += '<';
@@ -333,13 +335,13 @@
                 // humanized value for typing
             }, humanize);
 
-        }
+        },
         /**
          * Shuffles the numbers in the given array.
          * @param {Array} array
          * @returns {Array}
          */
-        ,shuffleArray: function(array) {
+        shuffleArray: function(array) {
             var tmp, current, top = array.length;
             if(top) while(--top) {
                 current = Math.floor(Math.random() * (top + 1));
@@ -348,7 +350,7 @@
                 array[top] = tmp;
             }
             return array;
-        }
+        },
 
         // Start & Stop currently not working
 
@@ -369,18 +371,19 @@
         // }
 
         // Reset and rebuild the element
-        ,
         reset: function() {
             var self = this;
             clearInterval(self.timeout);
             var id = this.el.attr('id');
-            this.el.after('<span id="' + id + '"/>')
-            this.el.remove();
+            this.el.empty();
             if (typeof this.cursor !== 'undefined') {
-                this.cursor.remove();
-            }
+        this.cursor.remove();
+      }
+            this.strPos = 0;
+            this.arrayPos = 0;
+            this.curLoop = 0;
             // Send the callback
-            self.options.resetCallback();
+            this.options.resetCallback();
         }
 
     };
@@ -390,7 +393,8 @@
             var $this = $(this),
                 data = $this.data('typed'),
                 options = typeof option == 'object' && option;
-            if (!data) $this.data('typed', (data = new Typed(this, options)));
+            if (data) { data.reset(); }
+            $this.data('typed', (data = new Typed(this, options)));
             if (typeof option == 'string') data[option]();
         });
     };
