@@ -1,13 +1,13 @@
 # typedjs-rails
 This gem just includes [Typed.js](https://github.com/mattboldt/typed.js) as an asset in the Rails 3.1 (or newer) asset pipeline.
 
-The current version in the gem is Typed.js 1.1.4
+The current version in the gem is Typed.js 2.0.9
 
 ## Installation
 
 Add the gem to the Gemfile
 
-    gem "typedjs-rails", "~> 1.0.4"
+    gem "typedjs-rails", "~> 2.0.9"
 
 ## Usage
 

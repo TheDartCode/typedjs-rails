@@ -4,7 +4,7 @@ require "typedjs/version"
 
 Gem::Specification.new do |s|
   s.name        = "typedjs-rails"
-  s.version     = "1.0.4"
+  s.version     = "2.0.9"
   s.authors     = ["TheDartCode"]
   s.email       = ["giorgos@thedartcode.com"]
   s.homepage    = "http://www.thedartcode.com/"
